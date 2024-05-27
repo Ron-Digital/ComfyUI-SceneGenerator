@@ -2,7 +2,7 @@
 
 ComfyUI-SceneGenerator, JSON dosyalarından sahne önizleme fotoğrafları oluşturmak için kullanılan bir ComfyUI eklentisidir. Bu eklenti, verilen JSON yapılandırmasına göre sahneleri oluşturur ve iki farklı görüntü çıktısı üretir: biri yalnızca ürünleri içerir, diğeri ise hem ürünleri hem de "props"ları içerir.
 
-[demo.png](demo.png)
+![ComfyUI-SceneGenerator](demo.png)
 
 ## Kurulum
 
