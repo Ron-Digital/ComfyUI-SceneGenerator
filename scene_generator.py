@@ -44,7 +44,7 @@ class SceneGenerator:
             scale_factor = 1
 
             main_image = Image.new('RGBA', (original_width, original_height), (255, 255, 255, 255))
-            product_image = Image.new('RGBA', (original_width, original_height), (255, 255, 255, 255))
+            product_image = Image.new('RGBA', (original_width, original_height), (255, 255, 255, 0))
 
             sorted_data = sorted(data, key=sort_key)
 
