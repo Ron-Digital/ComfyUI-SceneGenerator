@@ -1,10 +1,9 @@
-import base64
 import json
-import requests
-from io import BytesIO
+import base64
 from PIL import Image, ImageOps, ImageChops
+from io import BytesIO
+import requests
 import numpy as np
-import torch
 
 class SceneGenerator:
     @staticmethod
@@ -45,6 +44,7 @@ class SceneGenerator:
 
             main_image = Image.new('RGBA', (original_width, original_height), (255, 255, 255, 255))
             product_image = Image.new('RGBA', (original_width, original_height), (255, 255, 255, 0))
+            product_mask = Image.new('L', (original_width, original_height), 0)  # Alpha channel for the product
 
             sorted_data = sorted(data, key=sort_key)
 
@@ -60,8 +60,9 @@ class SceneGenerator:
                 config["width"] *= scale_factor
                 config["height"] *= scale_factor
 
-                # Image yükleme
-                response = requests.get(config["src"])
+                # Görüntüyü URL'den indirme ve yükleme
+                image_url = config["src"]
+                response = requests.get(image_url)
                 image = Image.open(BytesIO(response.content))
                 image = self.apply_flip(image, config["flip"])
 
@@ -85,12 +86,25 @@ class SceneGenerator:
                 paste_x = int(config["x"])
                 paste_y = int(config["y"])
 
-                # Product image üzerine prop'ları yapıştırma ve gerektiğinde kesme
                 if config["p_type"] == 'product':
                     product_image.paste(image_rotated, (int(new_x), int(new_y)), image_rotated)
                     main_image.paste(image_rotated, (int(new_x), int(new_y)), image_rotated)
+                    
+                    # Product maskesine ekleme
+                    mask_to_add = Image.new('L', (rotated_width, rotated_height), 255)
+                    product_mask.paste(mask_to_add, (int(new_x), int(new_y)))
                 else:
                     main_image.paste(image_rotated, (int(new_x), int(new_y)), image_rotated)
+
+                    # Prop'un product maskesindeki etkisini kaldırma
+                    mask_to_remove = image_rotated.split()[3]  # Alpha channel
+                    mask_to_remove_resized = mask_to_remove.resize((rotated_width, rotated_height), Image.LANCZOS)
+                    mask_to_remove_position = Image.new('L', (original_width, original_height), 0)
+                    mask_to_remove_position.paste(mask_to_remove_resized, (int(new_x), int(new_y)))
+                    product_mask = ImageChops.subtract(product_mask, mask_to_remove_position)
+
+            # Apply the final product mask to the product image
+            product_image = self.apply_transparency_mask(product_image, product_mask)
 
             # Convert images to base64
             product_image_base64 = self.image_to_base64(product_image)
@@ -109,14 +123,17 @@ class SceneGenerator:
             image = ImageOps.flip(image)
         return image
 
-    def crop_overlapping_area(self, product_image, prop_image, prop_x, prop_y):
-        product_box = (prop_x, prop_y, prop_x + prop_image.width, prop_y + prop_image.height)
-        region = product_image.crop(product_box)
-        cropped_region = ImageChops.subtract(region, prop_image)
-        product_image.paste(cropped_region, product_box)
-
     def image_to_base64(self, image):
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return img_str
+
+    def apply_transparency_mask(self, image, mask):
+        if image.mode != 'RGBA':
+            image = image.convert('RGBA')
+        mask = mask.resize(image.size, Image.LANCZOS)
+        alpha = image.split()[3]
+        alpha = ImageChops.multiply(alpha, mask)
+        image.putalpha(alpha)
+        return image
