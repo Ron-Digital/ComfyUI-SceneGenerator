@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-scenegenerator"
+description = "ComfyUI-SceneGenerator is a ComfyUI plugin used to generate scene preview photos from JSON files. This plugin creates scenes based on the provided JSON configuration and produces two different image outputs: one containing only the products and the other containing both the products and the props."
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["Pillow==9.0.1", "requests==2.28.1", "numpy==1.23.1", "torch==1.13.1"]
+
+[project.urls]
+Repository = "https://github.com/Ron-Digital/ComfyUI-SceneGenerator"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-SceneGenerator"
+Icon = ""
